@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
+import org.bukkit.WorldCreator;
 import org.bukkit.craftbukkit.inventory.CraftItemFactory;
 import org.bukkit.craftbukkit.util.Versioning;
 
@@ -56,6 +57,15 @@ public class DummyServer implements InvocationHandler {
                         final Logger logger = Logger.getLogger(DummyServer.class.getCanonicalName());
                         public Object handle(DummyServer server, Object[] args) {
                             return logger;
+                        }
+                    }
+                );
+            methods.put(
+                    Server.class.getMethod("createWorld"), 
+                    new MethodHandler(){
+                        final WorldCreator creator = new WorldCreator("DummyWorld");
+                        public Object handle(DummyServer server, Object[] args){
+                            return creator.createWorld();
                         }
                     }
                 );
