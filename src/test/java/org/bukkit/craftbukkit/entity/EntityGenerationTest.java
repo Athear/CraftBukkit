@@ -7,19 +7,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 
-import net.minecraft.server.*;
+import net.minecraft.server.World;
 import net.minecraft.server.Entity;
 
-
-import org.bukkit.Bukkit;
-import org.bukkit.Server;
-import org.bukkit.support.AbstractTestingBase;
-import org.bukkit.support.DummyServer;
 import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.entity.*;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class EntityGenerationTest{
@@ -115,13 +108,13 @@ public class EntityGenerationTest{
             System.err.print("Access to class constrcutor denied.");
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            // TODO Auto-generated catch block "Too few / too many arguments passed to constructor"
+            System.err.println("Too few / too many arguments passed to constructor");
             e.printStackTrace();
         } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
+            System.err.println("Access to class constructor denied.");
             e.printStackTrace();
         } catch (NoSuchMethodException e) {
-            System.err.println("Entity constructor requires more input than worlds");
+            System.err.println("Entity constructor requires more input than a world");
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             System.err.println("Entity may require world information when initializing. World is presently NULL");
