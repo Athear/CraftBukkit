@@ -1,5 +1,8 @@
 package org.bukkit.craftbukkit.entity;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,13 +24,30 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
     protected final CraftServer server;
     protected Entity entity;
     private EntityDamageEvent lastDamageEvent;
+    private static final HashMap<String,String> specialCraftNames = new HashMap<String,String>();
+    static{
+      //specially named CraftBukkit classes
+        //For abstract Minecraft classes:
+        specialCraftNames.put("EntityHuman", "CraftHumanEntity");
+        specialCraftNames.put("EntityWaterAnimal", "CraftWaterMob");
+        specialCraftNames.put("EntityLiving","CraftLivingEntity");
+        specialCraftNames.put("EntityAnimal", "CraftAnimals");
+        //For other Minecraft classes:
+        specialCraftNames.put("EntityGiantZombie","CraftGiant");
+        specialCraftNames.put("EntityPotion", "CraftThrownPotion");
+        specialCraftNames.put("EntityFallingBlock","CraftFallingSand");
+        specialCraftNames.put("EntityFishingHook", "CraftFish");
+        specialCraftNames.put("EntityLightning", "CraftLightningStrike");
+        specialCraftNames.put("EntityMinecartCommandBlock","CraftMinecartCommand");
+        specialCraftNames.put("EntityFireworks", "CraftFirework");
+    }
 
     public CraftEntity(final CraftServer server, final Entity entity) {
         this.server = server;
         this.entity = entity;
     }
 
-    public static CraftEntity getEntity(CraftServer server, Entity entity) {
+    public static CraftEntity getEntity2(CraftServer server, Entity entity) {
         /**
          * Order is *EXTREMELY* important -- keep it right! =D
          */
@@ -155,6 +175,54 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
         else if (entity instanceof EntityFireworks) { return new CraftFirework(server, (EntityFireworks) entity); }
 
         throw new AssertionError("Unknown entity " + entity == null ? null : entity.getClass());
+    }
+    
+    
+    @SuppressWarnings("unchecked")
+    public static CraftEntity getEntity(CraftServer server, Entity entity){
+        CraftEntity newEntity = null;
+        
+        Class<? extends Entity> entityClass = entity.getClass();
+        String entityName = entityClass.getSimpleName();
+        
+        Class<CraftEntity> craftClass;
+        String craftName;
+        
+        String errorMessage ="unknown Error.";
+        
+        if(specialCraftNames.containsKey(entityName)){
+            craftName = specialCraftNames.get(entityName);
+        }else{
+            craftName = "Craft"+entityName.substring(6);
+        }
+        try {
+            craftClass = (Class<CraftEntity>) Class.forName("org.bukkit.craftbukkit.entity."+craftName);
+            Constructor<CraftEntity> craftConstruct;
+            try{
+                craftConstruct = craftClass.getDeclaredConstructor(CraftServer.class, entityClass);
+            }catch(NoSuchMethodException e){
+                craftConstruct = craftClass.getDeclaredConstructor(CraftServer.class, entityClass.getSuperclass());
+            }
+            newEntity = craftConstruct.newInstance(server, entity);
+        } catch (ClassNotFoundException e) {
+            errorMessage = "Unknown entity " + entity.getClass().getName();
+        } catch (SecurityException e) {
+            errorMessage = "Access to class constructor denied";
+        } catch (NoSuchMethodException e) {
+            errorMessage =craftName+" contructor is missing or requires non-standard arguments. Expected inputs: Server, "+entityName+".";
+        } catch (IllegalArgumentException e) {
+            errorMessage = craftName+" contructor requires non-standard arguments. Expected inputs: Server, "+entityName+".";
+        } catch (InstantiationException e) {
+            errorMessage = craftName+" class is an abstract class, and cannot be instantiated.";
+        } catch (IllegalAccessException e) {
+            errorMessage = "Access to class constructor denied";
+        } catch (InvocationTargetException e) {
+            errorMessage = "Error thrown by "+craftName+" constructor: \n"+ e.getLocalizedMessage();
+        }
+        if(newEntity == null){
+            throw new AssertionError(errorMessage);
+        }
+        return newEntity;
     }
 
     public Location getLocation() {
